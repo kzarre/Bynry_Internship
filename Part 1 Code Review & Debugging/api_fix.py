@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 def validate_product_request_data(data):
     # To check if the data is valid to be inserted into the database or not
 
@@ -26,7 +28,8 @@ def validate_product_request_data(data):
         return False
 
     # make sure SKUs and warehouse_IDs are unique
-    if Product.query.filter_by(sku=data['sku']).first() or Warehouse.query.filter_by(warehouse_id=data['warehouse_id']).first():
+    # But should be in the DB schema that it should be UNIQUE
+    if Product.query.filter_by(sku=data['sku']).first():
         return False
 
     return True
@@ -41,10 +44,12 @@ def create_product():
     # data will be None and the function will throw an err
 
     if data is None:
-        return {'error': "Request Invalid"}, 400
+        return {'error': "Request Invalid"}, 422
 
     if not validate_product_request_data(data):
-        return {'error': "Data Format Error"}, 400
+        return {'error': "Data Format Error"}, 422
+
+    data["price"] = Decimal(str(data.get('price', 0)))
 
     
     product = Product(

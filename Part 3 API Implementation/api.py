@@ -43,18 +43,23 @@ def low_stock_alert(company_id):
 	try:
 		query = """
             SELECT 
-                a.warehouse_id,
-                w.name AS warehouse_name,
-                a.product_id,
-                p.name AS product_name,
-                a.time_of_below_threshold,
-                i.quantity,
-                i.daily_sales
-            FROM alerts a
-            JOIN inventory i ON a.warehouse_id = i.warehouse_id AND a.product_id = i.product_id
-            JOIN products p ON a.product_id = p.id
-            JOIN warehouses w ON a.warehouse_id = w.id
-            WHERE p.company_id = ?
+                    a.product_id, 
+                    p.name AS product_name, 
+                    p.sku,           
+                    p.threshold,     
+                    a.warehouse_id, 
+                    w.name AS warehouse_name,
+                    i.quantity, 
+                    i.daily_sales,
+                    s.id AS supplier_id,            
+                    s.name AS supplier_name,        
+                    s.contact_email                 
+                FROM alerts a
+                JOIN inventory i ON a.warehouse_id = i.warehouse_id AND a.product_id = i.product_id
+                JOIN products p ON a.product_id = p.id
+                JOIN warehouses w ON a.warehouse_id = w.id
+                JOIN suppliers s ON p.supplier_id = s.id 
+                WHERE p.company_id = ?
         """
 
         cursor.execute(query, (company_id,))
@@ -63,19 +68,30 @@ def low_stock_alert(company_id):
         results = []
 
         for row in rows:
-        	results.append({
-                "warehouse_id": row['warehouse_id'],
-                "warehouse_name": row['warehouse_name'],
-                "product_id": row['product_id'],
-                "product_name": row['product_name'],
-                "time_under_threshold": row['time_of_below_threshold'],
-                "days_until_stockout": row["days_until_stockout"]
-                })
+            sales_velocity = row['daily_sales'] if row['daily_sales'] > 0 else 0.1
+            stockout_days = int(row['quantity'] / sales_velocity)
+        	
+            results.append({
+                            "product_id": row['product_id'],
+                            "product_name": row['product_name'],
+                            "sku": row['sku'],
+                            "warehouse_id": row['warehouse_id'],
+                            "warehouse_name": row['warehouse_name'],
+                            "current_stock": row['quantity'],
+                            "threshold": row['threshold'],
+                            "days_until_stockout": stockout_days,
+                            "supplier": {
+                                "id": row['supplier_id'],
+                                "name": row['supplier_name'],
+                                "contact_email": row['contact_email']
+                            }
+                        })
+
 
         return jsonify({
             "alerts": results,
-            "total": len(results)
-        }), 200
+            "total_alerts": len(results)
+        }), 201
 
 	except Exception as e:
         return jsonify({"error": str(e)}), 500
