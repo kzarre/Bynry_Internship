@@ -34,7 +34,7 @@
 
 ## API SPECIFICATION
 
-### GET /api/companies/<company_id>/alerts/low-stock
+### GET `/api/companies/<company_id>/alerts/low-stock`
 
 * Joins alerts, inventory, products, and warehouses.
 * Returns current stock, threshold, and time the alert was triggered.
