@@ -51,6 +51,7 @@ CREATE TABLE warehouses (
     name TEXT NOT NULL,
     location TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (company_id, id),
     FOREIGN KEY (company_id) REFERENCES companies(id)
 );
 
@@ -60,10 +61,11 @@ CREATE TABLE products (
     company_id INT NOT NULL,
     name TEXT NOT NULL,
     sku TEXT NOT NULL,
-    threshold INT DEFAULT 0,
+    price DECIMAL(10,2) NOT NULL CHECK (price >= 0),
     is_bundle BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (company_id, sku),
+    UNIQUE (id, company_id),
     FOREIGN KEY (company_id) REFERENCES companies(id)
 );
 
@@ -71,12 +73,16 @@ CREATE TABLE products (
 CREATE TABLE inventory (
     warehouse_id INT,
     product_id INT,
+    company_id INT NOT NULL,
+    threshold INT DEFAULT 0 CHECK (threshold >= 0),
     quantity INT NOT NULL CHECK (quantity >= 0),
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    daily_sales INT DEFAULT 0 CHECK (daily_sales >= 0),
+    last_sale TIMESTAMP,
 
     PRIMARY KEY (warehouse_id, product_id),
-    FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    FOREIGN KEY (company_id, warehouse_id) REFERENCES warehouses(company_id, id),
+    FOREIGN KEY (company_id, product_id) REFERENCES products(company_id, id)
 );
 
 
@@ -100,6 +106,16 @@ CREATE TABLE suppliers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+
+CREATE TABLE supplier_products (
+    supplier_id INT,
+    product_id INT,
+    price DECIMAL(10,2),
+
+    PRIMARY KEY (supplier_id, product_id),
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
 
 CREATE TABLE bundle_items (
     bundle_id INT,

@@ -25,8 +25,8 @@ def validate_product_request_data(data):
     if data["price"] <= 0 or data["initial_quantity"] < 0:
         return False
 
-    # make sure SKUs are unique
-    if Product.query.filter_by(sku=data['sku']).first():
+    # make sure SKUs and warehouse_IDs are unique
+    if Product.query.filter_by(sku=data['sku']).first() or Warehouse.query.filter_by(warehouse_id=data['warehouse_id']).first():
         return False
 
     return True
